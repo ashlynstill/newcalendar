@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="http://host.coxmediagroup.com/ajc/digitalprojects/global/css/iFrame_Medley.css" type="text/css"/>
+    <script src="http://alt.coxnewsweb.com/ajc/_newsapps/libraries/utility/tabletop/tabletop.js" type="text/javascript"></script>
+	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap-theme.min.css">
+	<script src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+    <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+
+    <title>Image Grid</title>
+</head> 
+<body>
+
+<div class="container">
+	<div class="row" id="grid">
+
+	</div>
+</div>
+
+<!-- popup -->
+<div id="popup">
+	<!-- popup buttons -->
+	<span class="fa fa-times-circle" id="close"></span>
+	<span class="fa fa-chevron-circle-left arrow" id="left"></span>
+	<span class="fa fa-chevron-circle-right arrow" id="right"></span>
+	<span id="popup-date"></span>
+
+	<!-- popup content -->
+	<h2 id="title">Title</h2>
+	<div id="popup-content">
+		<div id="popup-img">
+			<img src="#"/>
+		</div>
+		<div id="popup-side">
+			<p id="popup-text">text</p>
+			<p id="popup-sponsor">Sponsored by:</p>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+    
+    var public_spreadsheet_url;
+	var url = window.location.toString();
+	var query_string = url.split("?");
+	window.onload = function() { 
+		public_spreadsheet_url = query_string[2]; 
+		//call data from spreadsheet
+	    Tabletop.init( { key: public_spreadsheet_url,
+	                     callback: parseSheet,
+	                     simpleSheet: true } )
+	}
+
+ 	var date_arr = [];   
+ 	var sponsor_arr = [];
+ 	var img_arr = [];
+
+	//parse google spreadsheet
+	function parseSheet(gdata){
+        var today = new Date(); //getting todays date
+        today = dateConvert(today); //converting today's date to utc timestamp
+        
+        $.each(gdata, function (i, gdata){ //loop through each line of sheet
+        	//tabletop variables
+			var theDate = dateConvert(gdata.dates);
+			var img = '<img src="'+gdata.imageurl+'" width="100%"/>';
+			var sponsorURL = gdata.sponsorsite;
+			var sponsor;
+			var logo = gdata.logo;
+
+			//if no sponsor
+	        if (sponsorURL == ''){
+	        	sponsor = '';
+	        } else {
+	        	sponsor = '<p>Sponsored by:</p><a href="' + sponsorURL + '" target="blank"><img src="' + logo + '"/></a>';
+	        }
+
+	        //active days vs inactive day append to grid
+			if (theDate < today){ //active days
+				$('#grid').append('<div class="col-sm-4"><div class="active" id="'+theDate+'"><h5>'+gdata.dates+'</h5></div><div class="day before">'+img+'</div></div>');
+			}
+			else if (theDate == today){  //today
+				$('#grid').append('<div class="col-sm-4"><div class="active" id="'+theDate+'"><h5>'+gdata.dates+'</h5></div><div class="day today">'+img+'</div></div>');
+			}
+			else if (theDate > today){ //inactive days
+				
+				$('#grid').append('<div class="col-sm-4"><div class="inactive" id="'+theDate+'"><h5>'+gdata.dates+'</h5></div><div class="day after">'+img+'</div></div>');
+			}
+
+			//needed for popup
+			sponsor_arr.push(sponsor);
+	        img_arr.push(img);
+	        date_arr.push(theDate);
+		});
+
+
+		//index of today's date
+		var todayIndex = date_arr.indexOf(today);
+		if (todayIndex !== -1){ //if today's exact date on calendar then open in popup
+			todayIndex = todayIndex;
+			//fillPopup(todayIndex);
+		} else if (todayIndex == -1){ //if today's exact date is not on calendar, show most recent day in popup
+			var theLast = $('.active').last().attr('id');
+			theLast = parseInt(theLast);
+			theLast = date_arr.indexOf(theLast);
+			todayIndex = theLast;
+			fillPopup(theLast);
+		}
+
+		//close popup
+		$('#close').click(function(){
+	    	$('#popup').hide();
+	    });
+
+	    //only .active days can open in popup
+		$('.active').each(function(){
+			$(this).click(function(){
+				var dateIndex = $(this).attr('id');
+				dateIndex = parseInt(dateIndex);
+				dateIndex = date_arr.indexOf(dateIndex);
+				fillPopup(dateIndex);
+			});
+		});
+
+		//go back and forth in popup
+		$('.arrow').each(function(){
+			$(this).click(function(){
+				var direction = $(this).attr('id');
+				var currentDate = $('#popup-date').text();
+				currentDate = dateConvert(currentDate);
+				var newIndex = date_arr.indexOf(currentDate);
+				if (direction == 'left'){
+					newIndex = newIndex-1;
+				} else if (direction == 'right'){
+					newIndex = newIndex+1;
+				}
+				fillPopup(newIndex);
+			});
+		});
+
+		//populate popup
+		function fillPopup(index){
+			$('#right').show();
+			$('#left').show();
+	    	$('#popup-date').empty().append(gdata[index].dates);
+			$('#title').empty().append(gdata[index].bigtext);
+			$('#popup-img').empty().append(img_arr[index]);
+			$('#popup-text').empty().append(gdata[index].content);
+			$('#popup-sponsor').empty().append(sponsor_arr[index]);
+			$('#popup').show();
+			if (index>=todayIndex){
+				$('#right').hide();
+			} else if (index==0){
+				$('#left').hide();
+			}
+	    }
+
+	    //converts dates into usable, unique ID strings
+		function dateConvert(inDate){
+			var d = new Date(inDate);
+			var day = d.getUTCDate();
+			var utc = day;
+			return utc;
+		}
+    };
+</script>
+
+</body>
+</html>
