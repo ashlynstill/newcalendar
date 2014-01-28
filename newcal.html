@@ -163,16 +163,15 @@
 	    //converts dates into usable, unique ID strings
 		function dateConvert(inDate){
 			var d = new Date(inDate);
-			var day = d.getDate();
-			if (day<10){
+			var day = d.getDate(); //gets day of month 1-31
+			if (day<10){ //if day is less than 10, add a zero in front and conver to string
 				day = '0'+day.toString();
-			} else if (day>=10){
+			} else if (day>=10){ //if greater than 10 just convert to string
 				day = day.toString();
 			}
-			var month = (d.getMonth()+1).toString();
-			var dayID = month+day;
-			dayID = parseInt(dayID);
-			console.log(dayID);
+			var month = (d.getMonth()+1).toString(); //get month and converts to string
+			var dayID = month+day; //string of month and day to create usable date ID ( ex: 202 is feb 2, 131 is jan 31, etc)
+			dayID = parseInt(dayID);//back to integer
 			return dayID;
 		}
     };
