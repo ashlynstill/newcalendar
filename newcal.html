@@ -63,7 +63,7 @@
 	//parse google spreadsheet
 	function parseSheet(gdata){
         var today = new Date(); //getting todays date
-        today = dateConvert(today); //converting today's date to utc timestamp
+        today = dateConvert(today); //converting today's date to usable datestamp for ids
         
         $.each(gdata, function (i, gdata){ //loop through each line of sheet
         	//tabletop variables
@@ -163,9 +163,17 @@
 	    //converts dates into usable, unique ID strings
 		function dateConvert(inDate){
 			var d = new Date(inDate);
-			var day = d.getUTCDate();
-			var utc = day;
-			return utc;
+			var day = d.getDate();
+			if (day<10){
+				day = '0'+day.toString();
+			} else if (day>=10){
+				day = day.toString();
+			}
+			var month = (d.getMonth()+1).toString();
+			var dayID = month+day;
+			dayID = parseInt(dayID);
+			console.log(dayID);
+			return dayID;
 		}
     };
 </script>
